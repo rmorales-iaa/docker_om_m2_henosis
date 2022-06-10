@@ -1,10 +1,9 @@
 #start of Dokerfile
 #docker for run om m2 and henosis (https://gitlab.com/rmorales_iaa) using debian 'Fedora'
 
+#-------------------------------------
 #set the image base
 FROM fedora:36
-
-
 #-------------------------------------
 #user root
 
@@ -14,10 +13,11 @@ https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fed
 https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
 RUN dnf update -y
 
-
 #install tools and libraries
 RUN dnf group install -y "Development Tools"
-RUN dnf  install -y fftw-devel atlas-devel lapack-devel gnuplot parallel firefox autoconf autoconf automake libtool ffmpeg java cairo-devel libpng-devel libjpeg-turbo-devel zlib-devel bzip2-devel swig python3-devel cfitsio cfitsio-devel wcslib* python3-astropy python3-numpy
+RUN dnf install -y fftw-devel atlas-devel lapack-devel gnuplot parallel firefox autoconf autoconf automake libtool \
+                   ffmpeg java cairo-devel libpng-devel libjpeg-turbo-devel zlib-devel bzip2-devel swig \
+                   python3-devel cfitsio cfitsio-devel wcslib* python3-astropy python3-numpy
 RUN dnf update -y
 
 #add rafa user (password rafa) with root privilegies
@@ -122,8 +122,15 @@ RUN ./makeFatJar
 WORKDIR "/home/rafa/proyecto/m2/deploy"
 RUN ln -s m2-assembly-0.1.jar m2.jar
 
+#prepare the external data links
+RUN  mkdir -p /usr/local/astrometry/data
+RUN  mkdir -p /home/rafa/data/database
+RUN  mkdir -p /home/rafa/data/in
+RUN  mkdir -p /home/rafa/data/out
+
+#uncomment the parallel option for astroemtry.net indexes
+RUN sudo sed -i '/^#inparalle/s/^#//' /usr/local/astrometry/bin/../etc/astrometry.cfg
+
+
 #-------------------------------------
 #end of Dokerfile
-
-
-
