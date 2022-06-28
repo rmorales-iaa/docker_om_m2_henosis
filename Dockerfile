@@ -19,7 +19,7 @@ RUN dnf install -y fftw-devel atlas-devel lapack-devel gnuplot parallel firefox 
                    ffmpeg cairo-devel libpng-devel libjpeg-turbo-devel zlib-devel bzip2-devel swig \
                    python3-devel cfitsio cfitsio-devel wcslib* python3-astropy python3-numpy wget git vim \
                    ghostscript libtool libjpeg-devel libtiff-devel libgit2-devel lzip  gsl-devel cfitsio-devel curl-devel \
-                   gcc-c++ ncurses-devel
+                   gcc-c++ ncurses-devel ImageMagick
 RUN dnf update -y
 
 #add rafa user (password rafa) with root privilegies
@@ -33,7 +33,7 @@ RUN mkdir ~/Downloads
 
 #java
 WORKDIR ~/Downloads
-RUN wget --no-check-certificate --content-disposition "https://cloud.iaa.csic.es/public.php?service=files&t=9644fc6113cee11ef164cd2f882da85d&download&path=/tmp/jdk-8u231-linux-x64.tar.gz" 
+RUN wget --no-check-certificate --content-disposition "https://cloud.iaa.csic.es/public.php?service=files&t=903fa211399bb124d70eb253376480bb&download&path=/docker/om_m2_henosis/jdk-8u231-linux-x64.tar.gz" 
 RUN tar xvf jdk-8u231-linux-x64.tar.gz
 RUN mv jdk1.8.0_231/ /usr/lib/jvm
 RUN update-alternatives --install /usr/bin/java java /usr/lib/jvm/bin/java  100
@@ -120,7 +120,6 @@ RUN ln -s ../native/
 WORKDIR "/home/rafa/proyecto/om"
 RUN ./makeFatJar 
 
-
 #compile henosis
 WORKDIR "/home/rafa/proyecto/henosis"
 RUN mkdir deploy
@@ -131,7 +130,6 @@ RUN ln -s ../output
 RUN ln -s ../native/
 WORKDIR "/home/rafa/proyecto/henosis"
 RUN ./makeFatJar 
-
 
 #compile m2
 WORKDIR "/home/rafa/proyecto/m2"
@@ -145,6 +143,17 @@ WORKDIR "/home/rafa/proyecto/m2"
 RUN ./makeFatJar 
 WORKDIR "/home/rafa/proyecto/m2/deploy"
 RUN ln -s m2-assembly-0.1.jar m2.jar
+WORKDIR "/home/rafa/proyecto/m2/native"
+RUN rm libFitsUtils.so
+RUN ln -s libFitsUtils_fedora.so libFitsUtils.so
+
+#m2:copy sextractor setup
+WORKDIR "/home/rafa/Downloads"
+RUN wget --no-check-certificate --content-disposition "https://cloud.iaa.csic.es/public.php?service=files&t=0487dfcf6eb783a8d313f620396d1138&download&path=/docker/om_m2_henosis/sextractor.zip" 
+RUN unzip sextractor.zip
+RUN rm sextractor.zip
+RUN mv sextractor/ /home/rafa/proyecto/m2/input/
+
 
 #find_orb
 WORKDIR /home/rafa/proyecto/proyecto/
