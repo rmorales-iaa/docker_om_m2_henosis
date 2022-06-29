@@ -205,5 +205,8 @@ RUN mkdir -p /usr/local/astrometry/data
 RUN mkdir -p /home/rafa/data/database
 RUN mkdir -p /home/rafa/data/in
 RUN mkdir -p /home/rafa/data/out
+
+
+WORKDIR /home/rafa/proyecto/
 #--------------------------------------
 #end of Dokerfile
