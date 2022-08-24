@@ -72,7 +72,8 @@ RUN dnf install -y sbt
 
 #add additional tools
 RUN npm install gtop -g
-	
+
+RUN pip3 install astroalign
 #-------------------------------------
 #user rafa
 USER rafa
