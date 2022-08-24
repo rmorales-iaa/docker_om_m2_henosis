@@ -42,10 +42,11 @@ OM_DATA_OUT=$LOCAL_OM_DATA_OUT/:/home/rafa/proyecto/om/output
 HENOSIS_DATA_OUT=$LOCAL_HENOSIS_DATA_OUT/:/home/rafa/proyecto/henosis/output
 #----------------------------------
 podman run \
---privileged \
+  --privileged \
  --rm \
  --user $USER \
  --net host \
+ --hostname=omh_docker \
  -e DISPLAY=$MY_DISPLAY \
  --volume=$XAUTHORITY_VOLUMEN \
  -v $XAUTHORITY_DIR \

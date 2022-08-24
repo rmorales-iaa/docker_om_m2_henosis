@@ -11,7 +11,6 @@ FROM fedora:36
 RUN dnf install -y \
 https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm \
 https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
-RUN dnf update -y
 
 #install tools and libraries
 RUN dnf group install -y "Development Tools"
@@ -19,8 +18,27 @@ RUN dnf install -y fftw-devel atlas-devel lapack-devel gnuplot parallel firefox 
                    ffmpeg cairo-devel libpng-devel libjpeg-turbo-devel zlib-devel bzip2-devel swig \
                    python3-devel cfitsio cfitsio-devel wcslib* python3-astropy python3-numpy wget git vim \
                    ghostscript libtool libjpeg-devel libtiff-devel libgit2-devel lzip  gsl-devel cfitsio-devel curl-devel \
-                   gcc-c++ ncurses-devel ImageMagick
+                   gcc-c++ ncurses-devel ImageMagick nodejs
+                   
+#install postgre
+RUN dnf module -y install postgresql:14/server                    
+
+#install mongodb
+RUN echo "[mongodb]" >> /etc/yum.repos.d/mongodb.repo \ 
+ && echo "name=MongoDB" >> /etc/yum.repos.d/mongodb.repo \ 
+ && echo "baseurl=https://repo.mongodb.org/yum/redhat/8Server/mongodb-org/5.0/x86_64/" >> /etc/yum.repos.d/mongodb.repo \
+ && echo "gpgcheck=1" >> /etc/yum.repos.d/mongodb.repo \ 
+ && echo "enabled=1" >> /etc/yum.repos.d/mongodb.repo \ 
+ && echo "gpgkey=https://www.mongodb.org/static/pgp/server-5.0.asc" >> /etc/yum.repos.d/mongodb.repo
+ 
+RUN dnf install -y mongodb-org-server mongodb-mongosh mongodb-database-tools
+
 RUN dnf update -y
+
+#mongo service configuration
+RUN sed -i 's#  path: /var/log/mongodb/mongod.log#  path: /home/rafa/data/database/mongodb/log/mongod.log#g' /etc/mongod.conf 
+RUN sed -i 's#  dbPath: /var/lib/mongo#  dbPath: /home/rafa/data/database/mongodb#g' /etc/mongod.conf 
+RUN printf '\nsecurity:\n authorization: "enabled"\n' >> /etc/mongod.conf
 
 #add rafa user (password rafa) with root privilegies
 RUN useradd --password "huVS1Vq3prZJc" --create-home --shell /bin/bash rafa
@@ -30,6 +48,11 @@ RUN printf '\nrafa ALL=(ALL) NOPASSWD:ALL\n' >> /etc/sudoers
 #create directories
 RUN mkdir ~/Downloads
 
+#mongo compass
+WORKDIR  ~/Downloads
+RUN wget https://downloads.mongodb.com/compass/mongodb-compass-1.32.2.x86_64.rpm
+RUN dnf install -y ./mongodb-compass-1.32.2.x86_64.rpm
+RUN rm mongodb-compass-1.32.2.x86_64.rpm
 
 #java
 WORKDIR ~/Downloads
@@ -47,6 +70,9 @@ RUN curl -L https://www.scala-sbt.org/sbt-rpm.repo > sbt-rpm.repo
 RUN mv sbt-rpm.repo /etc/yum.repos.d/
 RUN dnf install -y sbt
 
+#add additional tools
+RUN npm install gtop -g
+	
 #-------------------------------------
 #user rafa
 USER rafa
@@ -102,7 +128,6 @@ RUN ./autogen.sh
 RUN ./configure
 RUN make -j8
 
-
 #compile my_psfex
 WORKDIR "/home/rafa/proyecto/my_psfex"
 RUN ./autogen.sh 
@@ -154,7 +179,6 @@ RUN unzip sextractor.zip
 RUN rm sextractor.zip
 RUN mv sextractor/ /home/rafa/proyecto/m2/input/
 
-
 #find_orb
 WORKDIR /home/rafa/proyecto/proyecto/
 RUN mkdir /home/rafa/proyecto/find_orb
@@ -201,12 +225,16 @@ RUN ln -s lunar/integrat
 RUN wget https://www.minorplanetcenter.net/iau/lists/ObsCodes.html
 
 #prepare the external data links
-RUN mkdir -p /usr/local/astrometry/data
-RUN mkdir -p /home/rafa/data/database
+RUN sudo mkdir -p /usr/local/astrometry/data
 RUN mkdir -p /home/rafa/data/in
 RUN mkdir -p /home/rafa/data/out
-
+RUN mkdir -p /home/rafa/data/database
+RUN mkdir -p /home/rafa/data/database/mongodb
+RUN mkdir -p /home/rafa/data/database/mongodb/log
+RUN mkdir -p /home/rafa/data/database/postgresql
+RUN sudo chown -R mongod:mongod /home/rafa/data/database/mongodb
 
 WORKDIR /home/rafa/proyecto/
+
 #--------------------------------------
 #end of Dokerfile
