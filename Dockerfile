@@ -225,6 +225,23 @@ RUN ln -s lunar/integrat
 #find_orb:get observarories codes
 RUN wget https://www.minorplanetcenter.net/iau/lists/ObsCodes.html
 
+#compile gsl required for lsst with ast  
+WORKDIR "/home/rafa/Downloads"
+RUN wget https://ftp.gnu.org/gnu/gsl/gsl-latest.tar.gz
+RUN tar xvf gsl-latest.tar.gz 
+RUN cd gsl-2.7.1/
+RUN ./configure
+RUN make -j8
+RUN sudo make install
+RUN rm -fr gsl*
+
+#compile lsst with ast (wcs fit algorithm) 
+RUN sudo dnf install root-minuit2 log4cxx-devel boost-devel gdb
+WORKDIR /home/rafa/proyecto/
+RUN git clone https://gitlab.com/rmorales_iaa/cc_lsst_wcs_fit_ast.git
+WORKDIR /home/rafa/proyecto/cc_lsst_wcs_fit_ast/Debug/ 
+RUN make main-build -j16
+              
 #prepare the external data links
 RUN sudo mkdir -p /usr/local/astrometry/data
 RUN mkdir -p /home/rafa/data/in
