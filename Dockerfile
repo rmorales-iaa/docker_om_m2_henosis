@@ -18,7 +18,7 @@ RUN dnf install -y fftw-devel atlas-devel lapack-devel gnuplot parallel firefox 
                    ffmpeg cairo-devel libpng-devel libjpeg-turbo-devel zlib-devel bzip2-devel swig \
                    python3-devel cfitsio cfitsio-devel wcslib* python3-astropy python3-numpy wget git vim \
                    ghostscript libtool libjpeg-devel libtiff-devel libgit2-devel lzip  gsl-devel cfitsio-devel curl-devel \
-                   gcc-c++ ncurses-devel ImageMagick nodejs pam-devel
+                   gcc-c++ ncurses-devel ImageMagick nodejs pam-devel gThumb
                    
 #install postgre
 RUN sudo dnf groupinstall -y "PostgreSQL Database Server 15 PGDG"
@@ -181,7 +181,7 @@ RUN unzip sextractor.zip
 RUN rm sextractor.zip
 RUN mv sextractor/ /home/rafa/proyecto/m2/input/
 
-#m2:update compiled sextractor and psfex executables
+#m2:update sextractor and psfex executables
 RUN cp /home/rafa/proyecto/my_sextractor/src/sex /home/rafa/proyecto/m2/input/sextractor/
 RUN cp /home/rafa/proyecto/my_psfex/src/psfex /home/rafa/proyecto/m2/input/sextractor/
 
@@ -229,6 +229,16 @@ RUN ln -s lunar/integrat
 
 #find_orb:get observarories codes
 RUN wget https://www.minorplanetcenter.net/iau/lists/ObsCodes.html
+
+#install astroimagej
+WORKDIR cd /home/rafa/
+RUN mkdir apps/astroimagej
+WORKDIR /home/rafa/apps/astroimagej
+RUN wget https://www.astro.louisville.edu/software/astroimagej/installation_packages/AstroImageJ_v5.1.0.00_linux_x64_java18.tar.gz
+RUN tar xvf AstroImageJ_v5.1.0.00_linux_x64_java18.tar.gz
+RUN rm *.tar.gz
+RUN cd /home/rafa/atajo/
+RUN ln -s /home/rafa/apps/astroimagej/AstroImageJ/AstroImageJ astroimagej
 
 #prepare the external data links
 RUN sudo mkdir -p /usr/local/astrometry/data
