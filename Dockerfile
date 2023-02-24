@@ -18,8 +18,7 @@ RUN dnf install -y fftw-devel atlas-devel lapack-devel gnuplot parallel firefox 
                    ffmpeg cairo-devel libpng-devel libjpeg-turbo-devel zlib-devel bzip2-devel swig \
                    python3-devel cfitsio cfitsio-devel wcslib* python3-astropy python3-numpy wget git vim \
                    ghostscript libtool libjpeg-devel libtiff-devel libgit2-devel lzip  gsl-devel cfitsio-devel curl-devel \
-<<<<<<< HEAD
-                   gcc-c++ ncurses-devel ImageMagick nodejs pam-devel gthumb xarchiver ark filezilla gitk
+                   gcc-c++ ncurses-devel ImageMagick nodejs pam-devel gthumb xarchiver ark filezilla gitk selinux-policy-devel
                    
 #instal GUI xfce (optional)
 RUN sudo dnf install @xfce-desktop-environment
@@ -37,13 +36,6 @@ RUN sudo systemctl status postgresql-15
 RUN sudo su - postgres
 RUN psql
 RUN alter user postgres with password 'YOUR_PASSWORD';
-=======
-                   gcc-c++ ncurses-devel ImageMagick nodejs pam-devel gThumb
-                   
-#install postgre
-RUN sudo dnf groupinstall -y "PostgreSQL Database Server 15 PGDG"
-
->>>>>>> @{u}
 
 #install mongodb
 RUN echo "[mongodb-org-6.0]" >> /etc/yum.repos.d/mongodb.repo \ 
@@ -54,8 +46,22 @@ RUN echo "[mongodb-org-6.0]" >> /etc/yum.repos.d/mongodb.repo \
  && echo "gpgkey=https://www.mongodb.org/static/pgp/server-6.0.asc" >> /etc/yum.repos.d/mongodb.repo
  
 RUN dnf install -y mongodb-org-server mongodb-mongosh mongodb-database-tools
-
 RUN dnf update -y
+
+#create directories
+RUN mkdir ~/Downloads
+
+#mongodb SE linux
+WORKDIR  ~/Downloads
+RUN git clone https://github.com/mongodb/mongodb-selinux
+RUN cd mongodb-selinux
+RUN make
+RUN sudo make install
+
+#mongodb SE linux ftdc errors
+WORKDIR  ~/Downloads
+RUN sudo ausearch -c 'ftdc' -raw | audit2allow -M my_ftdc
+RUN sudo semodule -X300 -i  my_ftdc.pp
 
 #mongo service configuration
 RUN sed -i 's#  path: /var/log/mongodb/mongod.log#  path: /home/rafa/data/database/mongodb/log/mongod.log#g' /etc/mongod.conf 
@@ -67,17 +73,11 @@ RUN useradd --password "huVS1Vq3prZJc" --create-home --shell /bin/bash rafa
 RUN usermod -aG wheel rafa
 RUN printf '\nrafa ALL=(ALL) NOPASSWD:ALL\n' >> /etc/sudoers
 
-#create directories
-RUN mkdir ~/Downloads
 
 #mongo compass
 WORKDIR  ~/Downloads
 RUN wget https://downloads.mongodb.com/compass/mongodb-compass-1.35.0.x86_64.rpm
-<<<<<<< HEAD
-RUN  sudo dnf install -y ./mongodb-compass-1.35.0.x86_64.rpm 
-=======
-RUN dnf install -y ./mongodb-compass-1.32.2.x86_64.rpm
->>>>>>> @{u}
+RUN sudo dnf install -y ./mongodb-compass-1.35.0.x86_64.rpm 
 RUN rm mongodb-compass-1.35.0.x86_64.rpm
 
 #java
@@ -206,10 +206,6 @@ RUN unzip sextractor.zip
 RUN rm sextractor.zip
 RUN mv sextractor/ /home/rafa/proyecto/m2/input/
 
-<<<<<<< HEAD
-
-=======
->>>>>>> @{u}
 #m2:update sextractor and psfex executables
 RUN cp /home/rafa/proyecto/my_sextractor/src/sex /home/rafa/proyecto/m2/input/sextractor/
 RUN cp /home/rafa/proyecto/my_psfex/src/psfex /home/rafa/proyecto/m2/input/sextractor/
