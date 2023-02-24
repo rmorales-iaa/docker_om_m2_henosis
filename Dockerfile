@@ -3,7 +3,7 @@
 
 #-------------------------------------
 #set the image base
-FROM fedora:36
+FROM fedora:37
 #-------------------------------------
 #user root
 
@@ -18,18 +18,32 @@ RUN dnf install -y fftw-devel atlas-devel lapack-devel gnuplot parallel firefox 
                    ffmpeg cairo-devel libpng-devel libjpeg-turbo-devel zlib-devel bzip2-devel swig \
                    python3-devel cfitsio cfitsio-devel wcslib* python3-astropy python3-numpy wget git vim \
                    ghostscript libtool libjpeg-devel libtiff-devel libgit2-devel lzip  gsl-devel cfitsio-devel curl-devel \
-                   gcc-c++ ncurses-devel ImageMagick nodejs
+                   gcc-c++ ncurses-devel ImageMagick nodejs pam-devel gthumb xarchiver ark filezilla gitk
+                   
+#instal GUI xfce (optional)
+RUN sudo dnf install @xfce-desktop-environment
+RUN echo "exec /usr/bin/xfce4-session" >> ~/.xinitrc 
+
                    
 #install postgre
-RUN dnf module -y install postgresql:14/server                    
+RUN sudo dnf install -y https://download.postgresql.org/pub/repos/yum/reporpms/F-37-x86_64/pgdg-fedora-repo-latest.noarch.rpm 
+
+RUN sudo dnf install -y postgresql15-server
+RUN sudo /usr/pgsql-15/bin/postgresql-15-setup initdb
+RUN sudo systemctl enable postgresql-15
+RUN sudo systemctl start postgresql-15
+RUN sudo systemctl status postgresql-15
+RUN sudo su - postgres
+RUN psql
+RUN alter user postgres with password 'YOUR_PASSWORD';
 
 #install mongodb
-RUN echo "[mongodb]" >> /etc/yum.repos.d/mongodb.repo \ 
- && echo "name=MongoDB" >> /etc/yum.repos.d/mongodb.repo \ 
- && echo "baseurl=https://repo.mongodb.org/yum/redhat/8Server/mongodb-org/5.0/x86_64/" >> /etc/yum.repos.d/mongodb.repo \
+RUN echo "[mongodb-org-6.0]" >> /etc/yum.repos.d/mongodb.repo \ 
+ && echo "name=MongoDB Repository" >> /etc/yum.repos.d/mongodb.repo \ 
+ && echo "baseurl=https://repo.mongodb.org/yum/redhat/8Server/mongodb-org/6.0/x86_64/" >> /etc/yum.repos.d/mongodb.repo \
  && echo "gpgcheck=1" >> /etc/yum.repos.d/mongodb.repo \ 
  && echo "enabled=1" >> /etc/yum.repos.d/mongodb.repo \ 
- && echo "gpgkey=https://www.mongodb.org/static/pgp/server-5.0.asc" >> /etc/yum.repos.d/mongodb.repo
+ && echo "gpgkey=https://www.mongodb.org/static/pgp/server-6.0.asc" >> /etc/yum.repos.d/mongodb.repo
  
 RUN dnf install -y mongodb-org-server mongodb-mongosh mongodb-database-tools
 
@@ -40,7 +54,7 @@ RUN sed -i 's#  path: /var/log/mongodb/mongod.log#  path: /home/rafa/data/databa
 RUN sed -i 's#  dbPath: /var/lib/mongo#  dbPath: /home/rafa/data/database/mongodb#g' /etc/mongod.conf 
 RUN printf '\nsecurity:\n authorization: "enabled"\n' >> /etc/mongod.conf
 
-#add rafa user (password rafa) with root privilegies
+#add rafa user (password) with root privilegies
 RUN useradd --password "huVS1Vq3prZJc" --create-home --shell /bin/bash rafa
 RUN usermod -aG wheel rafa
 RUN printf '\nrafa ALL=(ALL) NOPASSWD:ALL\n' >> /etc/sudoers
@@ -50,9 +64,9 @@ RUN mkdir ~/Downloads
 
 #mongo compass
 WORKDIR  ~/Downloads
-RUN wget https://downloads.mongodb.com/compass/mongodb-compass-1.32.2.x86_64.rpm
-RUN dnf install -y ./mongodb-compass-1.32.2.x86_64.rpm
-RUN rm mongodb-compass-1.32.2.x86_64.rpm
+RUN wget https://downloads.mongodb.com/compass/mongodb-compass-1.35.0.x86_64.rpm
+RUN  sudo dnf install -y ./mongodb-compass-1.35.0.x86_64.rpm 
+RUN rm mongodb-compass-1.35.0.x86_64.rpm
 
 #java
 WORKDIR ~/Downloads
@@ -73,7 +87,7 @@ RUN dnf install -y sbt
 #add additional tools
 RUN npm install gtop -g
 
-RUN pip3 install astroalign
+RUN pip3 install wheel astroalign
 #-------------------------------------
 #user rafa
 USER rafa
@@ -100,25 +114,25 @@ RUN git clone https://gitlab.com/rmorales_iaa/my_sextractor.git
 RUN git clone https://github.com/dstndstn/astrometry.net.git 
 
 #compile gnuastro
-RUN wget https://ftp.gnu.org/gnu/gnuastro/gnuastro-0.17.tar.gz
-RUN tar xvf gnuastro-0.17.tar.gz
-RUN rm -fr gnuastro-0.17.tar.gz
-WORKDIR /home/rafa/proyecto/gnuastro-0.17/
-ENV CPPFLAGS="$CPPFLAGS -I/usr/include/cfitsio/"
-RUN ./configure
-RUN make -j8
-RUN make check -j8
+RUN wget https://ftp.gnu.org/gnu/gnuastro/gnuastro-0.19.tar.gz
+RUN tar xvf gnuastro-0.19.tar.gz
+RUN rm -fr gnuastro-0.19.tar.gz
+WORKDIR /home/rafa/proyecto/gnuastro-0.19/
+RUN ./configure CPPFLAGS="-I/usr/include/cfitsio/"
+RUN make -j$(nproc)
+RUN make check -j$(nproc)
 RUN sudo make install
 
 #compile astrometry.net
 WORKDIR "/home/rafa/proyecto/astrometry.net"
 RUN git config --global --add safe.directory /home/rafa/proyecto/astrometry.net
-RUN make
+RUN make -j$(nproc)
 RUN make py
 RUN make extra
 RUN sudo make install
 RUN printf '\n#astrometry.net\nPATH=$PATH:/usr/local/astrometry/bin/'  >> ~/.bashrc
 RUN source ~/.bashrc
+
 #uncomment the parallel option for astrometry.net indexes
 RUN sudo sed -i '/^#inparallel/s/^#//'  /usr/local/astrometry/bin/../etc/astrometry.cfg
 
@@ -127,13 +141,13 @@ RUN sudo sed -i '/^#inparallel/s/^#//'  /usr/local/astrometry/bin/../etc/astrome
 WORKDIR "/home/rafa/proyecto/my_sextractor"
 RUN ./autogen.sh 
 RUN ./configure
-RUN make -j8
+RUN make -j$(nproc)
 
 #compile my_psfex
 WORKDIR "/home/rafa/proyecto/my_psfex"
 RUN ./autogen.sh 
 RUN ./configure
-RUN make -j8
+RUN make -j$(nproc)
 
 #compile om
 WORKDIR "/home/rafa/proyecto/om"
@@ -175,10 +189,15 @@ RUN ln -s libFitsUtils_fedora.so libFitsUtils.so
 
 #m2:copy sextractor setup
 WORKDIR "/home/rafa/Downloads"
-RUN wget --no-check-certificate --content-disposition "https://cloud.iaa.csic.es/public.php?service=files&t=0487dfcf6eb783a8d313f620396d1138&download&path=/docker/om_m2_henosis/sextractor.zip" 
+RUN  wget --no-check-certificate --content-disposition https://cloud.iaa.csic.es/index.php/s/TpWec4MFQG6zecy -O sextractor.zip
 RUN unzip sextractor.zip
 RUN rm sextractor.zip
 RUN mv sextractor/ /home/rafa/proyecto/m2/input/
+
+
+#m2:update sextractor and psfex executables
+RUN cp /home/rafa/proyecto/my_sextractor/src/sex /home/rafa/proyecto/m2/input/sextractor/
+RUN cp /home/rafa/proyecto/my_psfex/src/psfex /home/rafa/proyecto/m2/input/sextractor/
 
 #find_orb
 WORKDIR /home/rafa/proyecto/proyecto/
@@ -224,6 +243,16 @@ RUN ln -s lunar/integrat
 
 #find_orb:get observarories codes
 RUN wget https://www.minorplanetcenter.net/iau/lists/ObsCodes.html
+
+#install astroimagej
+WORKDIR cd /home/rafa/
+RUN mkdir apps/astroimagej
+WORKDIR /home/rafa/apps/astroimagej
+RUN wget https://www.astro.louisville.edu/software/astroimagej/installation_packages/AstroImageJ_v5.1.0.00_linux_x64_java18.tar.gz
+RUN tar xvf AstroImageJ_v5.1.0.00_linux_x64_java18.tar.gz
+RUN rm *.tar.gz
+RUN cd /home/rafa/atajo/
+RUN ln -s /home/rafa/apps/astroimagej/AstroImageJ/AstroImageJ astroimagej
 
 #prepare the external data links
 RUN sudo mkdir -p /usr/local/astrometry/data
