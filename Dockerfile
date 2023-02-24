@@ -18,6 +18,7 @@ RUN dnf install -y fftw-devel atlas-devel lapack-devel gnuplot parallel firefox 
                    ffmpeg cairo-devel libpng-devel libjpeg-turbo-devel zlib-devel bzip2-devel swig \
                    python3-devel cfitsio cfitsio-devel wcslib* python3-astropy python3-numpy wget git vim \
                    ghostscript libtool libjpeg-devel libtiff-devel libgit2-devel lzip  gsl-devel cfitsio-devel curl-devel \
+<<<<<<< HEAD
                    gcc-c++ ncurses-devel ImageMagick nodejs pam-devel gthumb xarchiver ark filezilla gitk
                    
 #instal GUI xfce (optional)
@@ -36,6 +37,13 @@ RUN sudo systemctl status postgresql-15
 RUN sudo su - postgres
 RUN psql
 RUN alter user postgres with password 'YOUR_PASSWORD';
+=======
+                   gcc-c++ ncurses-devel ImageMagick nodejs pam-devel gThumb
+                   
+#install postgre
+RUN sudo dnf groupinstall -y "PostgreSQL Database Server 15 PGDG"
+
+>>>>>>> @{u}
 
 #install mongodb
 RUN echo "[mongodb-org-6.0]" >> /etc/yum.repos.d/mongodb.repo \ 
@@ -65,7 +73,11 @@ RUN mkdir ~/Downloads
 #mongo compass
 WORKDIR  ~/Downloads
 RUN wget https://downloads.mongodb.com/compass/mongodb-compass-1.35.0.x86_64.rpm
+<<<<<<< HEAD
 RUN  sudo dnf install -y ./mongodb-compass-1.35.0.x86_64.rpm 
+=======
+RUN dnf install -y ./mongodb-compass-1.32.2.x86_64.rpm
+>>>>>>> @{u}
 RUN rm mongodb-compass-1.35.0.x86_64.rpm
 
 #java
@@ -194,7 +206,10 @@ RUN unzip sextractor.zip
 RUN rm sextractor.zip
 RUN mv sextractor/ /home/rafa/proyecto/m2/input/
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> @{u}
 #m2:update sextractor and psfex executables
 RUN cp /home/rafa/proyecto/my_sextractor/src/sex /home/rafa/proyecto/m2/input/sextractor/
 RUN cp /home/rafa/proyecto/my_psfex/src/psfex /home/rafa/proyecto/m2/input/sextractor/
